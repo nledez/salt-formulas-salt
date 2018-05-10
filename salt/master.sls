@@ -1,3 +1,5 @@
+{% from "salt/map.jinja" import salt_settings with context %}
+
 {%- set packages_upgrade = salt['pillar.get']('packages_upgrade', False) %}
 {%- if packages_upgrade %}
   {%- set pkg_install_or_latest = 'pkg.latest' %}
@@ -17,12 +19,20 @@ salt-master:
       - python-git
     - require:
       - pkgrepo: salt
+  file.recurse:
+    - name: {{ salt_settings.config_path }}/master.d
+    - template: jinja
+    - source: salt://{{ slspath }}/files/master.d
+    - clean: {{ salt_settings.clean_config_d_dir }}
+    - exclude_pat: _*
   service:
     - running
     - enable: True
     - reload: False
     - require:
       - pkg: salt-master
+    - watch:
+      - file: salt-master
 
 /srv:
   file.directory:
